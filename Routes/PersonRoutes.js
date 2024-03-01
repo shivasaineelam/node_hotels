@@ -3,21 +3,22 @@ const router = express.Router();
 const Person = require("../models/person");
 const passport = require("passport");
 const local = require("passport-local").Strategy;
-passport.use(
-  new local(async (username, password, done) => {
-    try {
-      const user = await Person.findOne({ username: username });
-      if (!user) return done(null, false, { message: "wrong username" });
-      const ismatch = await user.checkpassword(password);
-      if (ismatch == false) done(null, false, { message: "wrong password" });
-      done(null, true, { user });
-    } catch (err) {
-      done(err);
-    }
-  })
-);
-router.use(passport.initialize());
-const passportauth = passport.authenticate("local", { session: false });
+const { jwtauthmiddleware, generatetoken } = require("./../jwt");
+// passport.use(
+//   new local(async (username, password, done) => {
+//     try {
+//       const user = await Person.findOne({ username: username });
+//       if (!user) return done(null, false, { message: "wrong username" });
+//       const ismatch = await user.checkpassword(password);
+//       if (ismatch == false) done(null, false, { message: "wrong password" });
+//       done(null, true, { user });
+//     } catch (err) {
+//       done(err);
+//     }
+//   })
+// );
+// router.use(passport.initialize());
+// const passportauth = passport.authenticate("local", { session: false });
 
 router.put("/:id", async (req, res) => {
   const data = req.body;
@@ -41,18 +42,23 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/signup", async (req, res) => {
   const data = req.body;
   const newPerson = new Person(data);
   try {
-    await newPerson.save();
-    res.status(200).send("data is saved");
+    const user = await newPerson.save();
+    const token = generatetoken({
+      username: user.username,
+      id: user.id,
+      password: user.password,
+    });
+    res.status(200).send({ data: data, token: token });
   } catch (err) {
     res.status(500).send(err);
   }
 });
 
-router.get("/:type", passportauth, async (req, res) => {
+router.get("/:type", jwtauthmiddleware, async (req, res) => {
   try {
     const workType = req.params.type;
     if (
@@ -70,9 +76,8 @@ router.get("/:type", passportauth, async (req, res) => {
     res.send(err).status(304);
   }
 });
-router.get("/name/:name", passportauth, async (req, res) => {
+router.get("/name/:name", jwtauthmiddleware, async (req, res) => {
   const name = req.params.name;
-
   try {
     const data = await Person.findOne({ name: name });
     res.send(data).status(200);
@@ -81,10 +86,10 @@ router.get("/name/:name", passportauth, async (req, res) => {
   }
 });
 
-router.get("/", passportauth, async (req, res) => {
+router.get("/", jwtauthmiddleware, async (req, res) => {
   try {
-    const data = await Person.find();
-    return res.send(data).status(200);
+    const data = await Person.find({ username: req.user.username });
+    return res.send({ data: data, user: req.user }).status(200);
   } catch (err) {
     return res.send("error occured").status(500);
   }
