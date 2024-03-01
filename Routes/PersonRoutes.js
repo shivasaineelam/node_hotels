@@ -88,8 +88,8 @@ router.get("/name/:name", async (req, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const data = await Person.find({ username: req.user.username });
-    return res.send({ data: data, user: req.user }).status(200);
+    const data = await Person.find();
+    return res.send(data).status(200);
   } catch (err) {
     return res.send("error occured").status(500);
   }
