@@ -58,7 +58,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-router.get("/:type", jwtauthmiddleware, async (req, res) => {
+router.get("/:type", async (req, res) => {
   try {
     const workType = req.params.type;
     if (
@@ -76,7 +76,7 @@ router.get("/:type", jwtauthmiddleware, async (req, res) => {
     res.send(err).status(304);
   }
 });
-router.get("/name/:name", jwtauthmiddleware, async (req, res) => {
+router.get("/name/:name", async (req, res) => {
   const name = req.params.name;
   try {
     const data = await Person.findOne({ name: name });
@@ -86,7 +86,7 @@ router.get("/name/:name", jwtauthmiddleware, async (req, res) => {
   }
 });
 
-router.get("/", jwtauthmiddleware, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const data = await Person.find({ username: req.user.username });
     return res.send({ data: data, user: req.user }).status(200);
